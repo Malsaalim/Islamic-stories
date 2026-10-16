@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2f6b57">
+<meta name="description" content="Stories of repentance in Islamic tradition, in English and Dhivehi.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Stories of Repentance (Tawbah)</title>
 <script>
   // Apply a saved theme choice before first paint so the page does not flash.
@@ -36,7 +41,7 @@
       color-scheme: dark;
     }
   }
-  .theme-bar { display: flex; justify-content: flex-end; direction: ltr; }
+  .theme-bar { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; direction: ltr; }
   .theme-btn {
     font: inherit; font-size: .9rem; cursor: pointer; padding: .4rem .9rem;
     border-radius: 999px; border: 1px solid var(--line);
@@ -93,6 +98,7 @@
 <body dir="ltr">
 <div class="wrap">
   <div class="theme-bar">
+    <button id="install-btn" class="theme-btn" type="button" hidden>⬇ Install app</button>
     <button id="theme-btn" class="theme-btn" type="button"></button>
   </div>
   <header>
@@ -338,6 +344,26 @@ document.getElementById("btn-dv").onclick = () => { lang = "dv"; errorMsg = ""; 
 document.getElementById("btn-auto").onclick = autoTranslate;
 render();
 loadContent().then(render);
+
+/* ---------- Install as an app, and work offline ---------- */
+let installEvent = null;
+const installBtn = document.getElementById("install-btn");
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  installEvent = e;
+  installBtn.hidden = false;
+});
+installBtn.onclick = async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  try { await installEvent.userChoice; } catch (e) {}
+  installEvent = null;
+  installBtn.hidden = true;
+};
+window.addEventListener("appinstalled", () => { installBtn.hidden = true; });
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
 </script>
 </body>
 </html>
