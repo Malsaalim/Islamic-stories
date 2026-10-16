@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tawbah Stories</string>
+    <!-- The website the app shows. Change this if your site address is different. -->
+    <string name="app_url" translatable="false">https://malsaalim.github.io/Islamic-stories/</string>
+</resources>
