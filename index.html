@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stories of Repentance (Tawbah)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Noto+Sans+Thaana:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f7f4ee; --card:#fffdf8; --ink:#1f2a24; --muted:#5d6b63;
+    --accent:#2f6b57; --line:#e3ddd0; --notice:#fff3d6; --notice-ink:#6b4e00;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#121a16; --card:#18231d; --ink:#e9efe9; --muted:#a3b2a9;
+      --accent:#6fc2a4; --line:#2a3a31; --notice:#3a2f12; --notice-ink:#f0d48a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Lora", Georgia, serif; line-height: 1.75;
+  }
+  body[dir="rtl"] { font-family: "Noto Sans Thaana", "MV Boli", sans-serif; line-height: 2.1; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header { text-align: center; margin-bottom: 2rem; }
+  h1 { font-size: 2rem; margin: 0 0 .5rem; color: var(--accent); }
+  .sub { color: var(--muted); margin: 0; }
+  .toggle { display: flex; justify-content: center; gap: .5rem; margin: 1.5rem 0; }
+  .toggle button {
+    font: inherit; padding: .5rem 1.25rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+  }
+  .toggle button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+  .notice {
+    background: var(--notice); color: var(--notice-ink); padding: .75rem 1rem;
+    border-radius: 8px; margin-bottom: 1.5rem; font-family: "Lora", serif;
+    direction: ltr; text-align: left; font-size: .95rem;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem;
+  }
+  .card h2 { margin: 0 0 .75rem; font-size: 1.25rem; color: var(--accent); }
+  .card p { margin: 0 0 .75rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .lead { font-size: 1.05rem; }
+  footer { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 2rem; }
+</style>
+</head>
+<body dir="ltr">
+<div class="wrap">
+  <header>
+    <h1 id="title"></h1>
+    <p class="sub" id="subtitle"></p>
+  </header>
+
+  <div class="toggle" role="group" aria-label="Language">
+    <button id="btn-en" aria-pressed="true">English</button>
+    <button id="btn-dv" aria-pressed="false">ދިވެހި</button>
+  </div>
+
+  <div id="notice" class="notice" hidden>
+    The Dhivehi translation is pending review by a fluent speaker. English text is shown where Dhivehi is not yet available.
+  </div>
+
+  <main id="content"></main>
+  <footer>Stories of repentance in Islamic tradition</footer>
+</div>
+
+<script>
+/* ============================================================
+   CONTENT. Paste reviewed Dhivehi text into the "dv" fields.
+   Leave a field as "" (or [] for lists) to show English instead.
+   ============================================================ */
+const CONTENT = {
+  title: { en: "Stories of Repentance (Tawbah)", dv: "" },
+  subtitle: { en: "The transformative power of sincere repentance", dv: "" },
+
+  intro: {
+    en: "Several compelling stories in Islamic tradition illustrate the transformative power of repentance (Tawbah). One notable example is the story of the man who killed 99 people and sought forgiveness, demonstrating that no sin is too great for Allah's mercy if one truly repents. Another powerful example is the repentance of Ka'b ibn Malik, who was ostracized for failing to join the Battle of Tabuk but whose honesty and eventual acceptance of Allah's forgiveness highlight the importance of truthfulness and sincere remorse.",
+    dv: ""
+  },
+  deeper: { en: "Here's a deeper look at these and other stories:", dv: "" },
+
+  stories: [
+    {
+      title: { en: "1. The Man Who Killed 99 People", dv: "" },
+      points: {
+        en: [
+          "This story, found in Sahih Muslim, tells of a man who had killed 99 people and then sought guidance on repentance.",
+          "Initially, he was told by a monk that he could not be forgiven, leading him to kill the monk and complete his hundredth victim.",
+          "He then sought out a scholar who advised him to leave his wicked town and migrate to a righteous one for worship.",
+          "The man's journey to the new town was cut short by death, and the angels of mercy and punishment debated over him.",
+          "Ultimately, Allah accepted his repentance, as he had intended to leave his evil ways and seek forgiveness.",
+          "This story emphasizes that sincere repentance, even after great sins, is accepted by Allah, and that migration to a righteous environment can aid in reformation, according to QuranAcademy.io."
+        ],
+        dv: []
+      }
+    },
+    {
+      title: { en: "2. The Repentance of Ka'b ibn Malik", dv: "" },
+      points: {
+        en: [
+          "Ka'b ibn Malik was one of three companions who failed to join the Prophet Muhammad (PBUH) in the Battle of Tabuk.",
+          "Unlike the hypocrites who made excuses, Ka'b honestly admitted his fault to the Prophet.",
+          "For fifty days, he was ostracized by the community, enduring immense hardship and self-reflection.",
+          "Eventually, Allah revealed verses in the Quran accepting his repentance and the repentance of the other two companions.",
+          "This story highlights the importance of honesty, sincerity, and enduring patience in the face of adversity during the repentance process, according to Medium."
+        ],
+        dv: []
+      }
+    },
+    {
+      title: { en: "3. Al-Fudayl ibn 'Iyad's Transformation", dv: "" },
+      points: {
+        en: [
+          "Al-Fudayl ibn 'Iyad, before his piety, was a notorious highway robber.",
+          "One night, while attempting to rob a house, he heard someone reciting the verse, \"Has not the time yet come for the believers that their hearts should become humbly submissive for the remembrance of God\" (Surah Al-Hadid, 57:16).",
+          "This verse struck him deeply, leading him to abandon his life of crime and seek refuge.",
+          "He eventually became a renowned scholar and devoted his life to worship and guiding others, says propheticprofit.org.",
+          "This story illustrates the impact of divine guidance and the potential for profound change even from a life of sin."
+        ],
+        dv: []
+      }
+    },
+    {
+      title: { en: "4. The Wife of Pharaoh", dv: "" },
+      points: {
+        en: [
+          "Asiya, the wife of Pharaoh, is an example of a righteous woman who remained steadfast in her faith despite living with a tyrannical ruler.",
+          "She is mentioned in the Quran as an example of faith and repentance, praying for a home in Paradise near Allah and deliverance from Pharaoh's oppression.",
+          "Her story emphasizes that faith and righteous actions can be found even in the most challenging circumstances."
+        ],
+        dv: []
+      }
+    }
+  ],
+
+  closing: {
+    en: "These stories, and others in Islamic tradition, serve as reminders of Allah's infinite mercy and the potential for transformation through sincere repentance. They emphasize the importance of seeking forgiveness, being truthful in admitting one's faults, and striving to live a righteous life.",
+    dv: ""
+  }
+};
+
+/* ============================================================ */
+let lang = "en";
+let missing = false;
+
+function pick(field) {            // single string
+  if (lang === "dv" && field.dv && field.dv.trim()) return field.dv;
+  if (lang === "dv") missing = true;
+  return field.en;
+}
+function pickList(field) {        // array of strings
+  if (lang === "dv" && field.dv && field.dv.length === field.en.length) return field.dv;
+  if (lang === "dv") missing = true;
+  return field.en;
+}
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function render() {
+  missing = false;
+  const root = document.getElementById("content");
+  root.replaceChildren();
+
+  document.getElementById("title").textContent = pick(CONTENT.title);
+  document.getElementById("subtitle").textContent = pick(CONTENT.subtitle);
+
+  const intro = el("section", "card");
+  intro.append(el("p", "lead", pick(CONTENT.intro)));
+  intro.append(el("p", "", pick(CONTENT.deeper)));
+  root.append(intro);
+
+  CONTENT.stories.forEach(s => {
+    const card = el("section", "card");
+    card.append(el("h2", "", pick(s.title)));
+    pickList(s.points).forEach(t => card.append(el("p", "", t)));
+    root.append(card);
+  });
+
+  const end = el("section", "card");
+  end.append(el("p", "", pick(CONTENT.closing)));
+  root.append(end);
+
+  // Direction applies only when real Dhivehi is being shown.
+  const showingDv = lang === "dv" && !missing;
+  document.body.dir = showingDv ? "rtl" : "ltr";
+  document.documentElement.lang = showingDv ? "dv" : "en";
+  document.getElementById("notice").hidden = !(lang === "dv" && missing);
+
+  document.getElementById("btn-en").setAttribute("aria-pressed", lang === "en");
+  document.getElementById("btn-dv").setAttribute("aria-pressed", lang === "dv");
+}
+
+document.getElementById("btn-en").onclick = () => { lang = "en"; render(); };
+document.getElementById("btn-dv").onclick = () => { lang = "dv"; render(); };
+render();
+</script>
+</body>
+</html>
