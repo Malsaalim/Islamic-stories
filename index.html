@@ -50,14 +50,25 @@
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font-family: "Lora", Georgia, serif; line-height: 1.75;
+    font-family: "Lora", "Noto Sans Thaana", Georgia, serif; line-height: 1.75;
   }
-  body[dir="rtl"] { font-family: "Noto Sans Thaana", "MV Boli", sans-serif; line-height: 2.1; }
+  /* Each piece of text carries its own direction, so Dhivehi (right-to-left)
+     and English (left-to-right) can sit side by side while translating. */
+  [dir="rtl"] { font-family: "Noto Sans Thaana", "MV Boli", sans-serif; line-height: 2.1; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
   header { text-align: center; margin-bottom: 2rem; }
   h1 { font-size: 2rem; margin: 0 0 .5rem; color: var(--accent); }
   .sub { color: var(--muted); margin: 0; }
-  .toggle { display: flex; justify-content: center; gap: .5rem; margin: 1.5rem 0; }
+  .toggle { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin: 1.5rem 0; }
+  .toggle button:disabled { opacity: .6; cursor: progress; }
+  .toggle button.auto { border-style: dashed; }
+  .notice p { margin: 0 0 .4rem; }
+  .notice p:last-child { margin-bottom: 0; }
+  .notice.error { background: #fde4e1; color: #7a1f16; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .notice.error { background: #4a1d19; color: #f6c3bd; }
+  }
+  :root[data-theme="dark"] .notice.error { background: #4a1d19; color: #f6c3bd; }
   .toggle button {
     font: inherit; padding: .5rem 1.25rem; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
@@ -92,11 +103,10 @@
   <div class="toggle" role="group" aria-label="Language">
     <button id="btn-en" aria-pressed="true">English</button>
     <button id="btn-dv" aria-pressed="false">ދިވެހި</button>
+    <button id="btn-auto" class="auto" type="button">Auto-translate to Dhivehi</button>
   </div>
 
-  <div id="notice" class="notice" hidden>
-    The Dhivehi translation is pending review by a fluent speaker. English text is shown where Dhivehi is not yet available.
-  </div>
+  <div id="notice" class="notice" hidden></div>
 
   <main id="content"></main>
   <footer>Stories of repentance in Islamic tradition</footer>
@@ -178,58 +188,166 @@ const CONTENT = {
 };
 
 /* ============================================================ */
-let lang = "en";
-let missing = false;
+const MT_KEY = "dv-machine-v1";
+let MT = {};                       // English text -> machine-translated Dhivehi
+try { MT = JSON.parse(localStorage.getItem(MT_KEY) || "{}") || {}; } catch (e) { MT = {}; }
+function saveMT() { try { localStorage.setItem(MT_KEY, JSON.stringify(MT)); } catch (e) {} }
 
-function pick(field) {            // single string
-  if (lang === "dv" && field.dv && field.dv.trim()) return field.dv;
-  if (lang === "dv") missing = true;
-  return field.en;
+let lang = "en";
+let busy = false, done = 0, total = 0, errorMsg = "";
+let usedMachine = false, usedMissing = false;   // set while rendering
+
+const hasText = s => typeof s === "string" && s.trim() !== "";
+
+// Decide which text to show. Reviewed Dhivehi always wins over machine output.
+function resolve(en, dv) {
+  if (lang !== "dv") return { text: en, kind: "en" };
+  if (hasText(dv)) return { text: dv, kind: "reviewed" };
+  if (hasText(MT[en])) { usedMachine = true; return { text: MT[en], kind: "machine" }; }
+  usedMissing = true;
+  return { text: en, kind: "missing" };
 }
-function pickList(field) {        // array of strings
-  if (lang === "dv" && field.dv && field.dv.length === field.en.length) return field.dv;
-  if (lang === "dv") missing = true;
-  return field.en;
+function setText(elm, en, dv) {
+  const r = resolve(en, dv);
+  elm.textContent = r.text;
+  const rtl = r.kind === "reviewed" || r.kind === "machine";
+  elm.setAttribute("dir", rtl ? "rtl" : "ltr");
+  elm.setAttribute("lang", rtl ? "dv" : "en");
+  return elm;
 }
-function el(tag, cls, text) {
+function node(tag, cls, en, dv) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text;
-  return e;
+  return setText(e, en, dv);
+}
+function dvAt(list, i, enList) {   // per-item Dhivehi, only if the lists line up
+  return list && list.length === enList.length ? list[i] : "";
 }
 
 function render() {
-  missing = false;
-  const root = document.getElementById("content");
-  root.replaceChildren();
+  usedMachine = false; usedMissing = false;
+  const main = document.getElementById("content");
+  main.replaceChildren();
 
-  document.getElementById("title").textContent = pick(CONTENT.title);
-  document.getElementById("subtitle").textContent = pick(CONTENT.subtitle);
+  setText(document.getElementById("title"), CONTENT.title.en, CONTENT.title.dv);
+  setText(document.getElementById("subtitle"), CONTENT.subtitle.en, CONTENT.subtitle.dv);
 
-  const intro = el("section", "card");
-  intro.append(el("p", "lead", pick(CONTENT.intro)));
-  intro.append(el("p", "", pick(CONTENT.deeper)));
-  root.append(intro);
+  const intro = document.createElement("section");
+  intro.className = "card";
+  intro.append(node("p", "lead", CONTENT.intro.en, CONTENT.intro.dv));
+  intro.append(node("p", "", CONTENT.deeper.en, CONTENT.deeper.dv));
+  main.append(intro);
 
   CONTENT.stories.forEach(s => {
-    const card = el("section", "card");
-    card.append(el("h2", "", pick(s.title)));
-    pickList(s.points).forEach(t => card.append(el("p", "", t)));
-    root.append(card);
+    const card = document.createElement("section");
+    card.className = "card";
+    card.append(node("h2", "", s.title.en, s.title.dv));
+    s.points.en.forEach((t, i) => card.append(node("p", "", t, dvAt(s.points.dv, i, s.points.en))));
+    main.append(card);
   });
 
-  const end = el("section", "card");
-  end.append(el("p", "", pick(CONTENT.closing)));
-  root.append(end);
+  const end = document.createElement("section");
+  end.className = "card";
+  end.append(node("p", "", CONTENT.closing.en, CONTENT.closing.dv));
+  main.append(end);
 
-  // Direction applies only when real Dhivehi is being shown.
-  const showingDv = lang === "dv" && !missing;
-  document.body.dir = showingDv ? "rtl" : "ltr";
-  document.documentElement.lang = showingDv ? "dv" : "en";
-  document.getElementById("notice").hidden = !(lang === "dv" && missing);
+  renderNotice();
 
   document.getElementById("btn-en").setAttribute("aria-pressed", lang === "en");
   document.getElementById("btn-dv").setAttribute("aria-pressed", lang === "dv");
+  const auto = document.getElementById("btn-auto");
+  auto.disabled = busy;
+  auto.textContent = busy ? "Translating… " + done + "/" + total : "Auto-translate to Dhivehi";
+}
+
+function renderNotice() {
+  const box = document.getElementById("notice");
+  const lines = [];
+  if (errorMsg) lines.push(errorMsg);
+  if (lang === "dv" && usedMachine) {
+    lines.push("This Dhivehi was translated automatically by a machine (MyMemory). It has not been reviewed and may contain mistakes, especially in religious terms and Quran verses. Please have a Dhivehi-speaking scholar check it before relying on it.");
+  }
+  if (lang === "dv" && usedMissing && !busy && !errorMsg) {
+    lines.push("Some text has no Dhivehi yet and is shown in English. Press “Auto-translate to Dhivehi” to translate it.");
+  }
+  box.replaceChildren(...lines.map(t => { const p = document.createElement("p"); p.textContent = t; return p; }));
+  box.hidden = lines.length === 0;
+  box.classList.toggle("error", !!errorMsg);
+}
+
+/* ---------- Automatic translation (MyMemory, free, no account) ---------- */
+// MyMemory accepts about 500 characters per request, so long text is split at sentence ends.
+function chunk(text, max) {
+  const parts = text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [text];
+  const out = []; let cur = "";
+  for (const p of parts) {
+    if (cur && (cur + p).length > max) { out.push(cur.trim()); cur = p; } else { cur += p; }
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+function decodeEntities(s) {
+  return new DOMParser().parseFromString(s, "text/html").documentElement.textContent;
+}
+async function translateChunk(text) {
+  let res;
+  try {
+    res = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|dv");
+  } catch (e) {
+    throw new Error("Could not reach the translation service. Check your internet connection and try again.");
+  }
+  if (!res.ok) throw new Error("The translation service returned an error (" + res.status + "). Try again later.");
+  const data = await res.json();
+  const t = data && data.responseData && data.responseData.translatedText;
+  if (String(data.responseStatus) !== "200" || !t || /MYMEMORY WARNING/i.test(t)) {
+    throw new Error("The free translation limit for today may have been reached, or the service is busy. Showing English for the rest. Try again later.");
+  }
+  return decodeEntities(t);
+}
+
+// Every English string that still needs translating.
+function pendingTexts() {
+  const need = [];
+  const add = (en, dv) => { if (!hasText(dv) && !hasText(MT[en]) && !need.includes(en)) need.push(en); };
+  add(CONTENT.title.en, CONTENT.title.dv);
+  add(CONTENT.subtitle.en, CONTENT.subtitle.dv);
+  add(CONTENT.intro.en, CONTENT.intro.dv);
+  add(CONTENT.deeper.en, CONTENT.deeper.dv);
+  CONTENT.stories.forEach(s => {
+    add(s.title.en, s.title.dv);
+    s.points.en.forEach((t, i) => add(t, dvAt(s.points.dv, i, s.points.en)));
+  });
+  add(CONTENT.closing.en, CONTENT.closing.dv);
+  return need;
+}
+
+async function autoTranslate() {
+  if (busy) return;
+  lang = "dv";
+  errorMsg = "";
+  const jobs = pendingTexts();
+  if (jobs.length === 0) { render(); return; }
+  busy = true; done = 0; total = jobs.length;
+  render();
+  let next = 0;
+  async function worker() {
+    while (next < jobs.length && !errorMsg) {
+      const en = jobs[next++];
+      try {
+        const pieces = [];
+        for (const part of chunk(en, 450)) pieces.push(await translateChunk(part));
+        MT[en] = pieces.join(" ");
+        saveMT();
+      } catch (e) {
+        errorMsg = e.message || "Translation failed.";
+      }
+      done++;
+      render();
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+  busy = false;
+  render();
 }
 
 /* ---------- Light / dark theme ---------- */
@@ -257,8 +375,9 @@ themeBtn.onclick = () => {
 darkQuery.addEventListener("change", updateThemeButton);
 updateThemeButton();
 
-document.getElementById("btn-en").onclick = () => { lang = "en"; render(); };
-document.getElementById("btn-dv").onclick = () => { lang = "dv"; render(); };
+document.getElementById("btn-en").onclick = () => { lang = "en"; errorMsg = ""; render(); };
+document.getElementById("btn-dv").onclick = () => { lang = "dv"; errorMsg = ""; render(); };
+document.getElementById("btn-auto").onclick = autoTranslate;
 render();
 </script>
 </body>
