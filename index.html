@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stories of Repentance (Tawbah)</title>
+<script>
+  // Apply a saved theme choice before first paint so the page does not flash.
+  try {
+    var saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") {
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Noto+Sans+Thaana:wght@400;600&display=swap" rel="stylesheet">
@@ -11,14 +20,33 @@
   :root {
     --bg:#f7f4ee; --card:#fffdf8; --ink:#1f2a24; --muted:#5d6b63;
     --accent:#2f6b57; --line:#e3ddd0; --notice:#fff3d6; --notice-ink:#6b4e00;
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+  /* Dark applies when the visitor chose it, or when they have not chosen
+     and their device prefers dark. */
+  :root[data-theme="dark"] {
+    --bg:#121a16; --card:#18231d; --ink:#e9efe9; --muted:#a3b2a9;
+    --accent:#6fc2a4; --line:#2a3a31; --notice:#3a2f12; --notice-ink:#f0d48a;
+    color-scheme: dark;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg:#121a16; --card:#18231d; --ink:#e9efe9; --muted:#a3b2a9;
       --accent:#6fc2a4; --line:#2a3a31; --notice:#3a2f12; --notice-ink:#f0d48a;
+      color-scheme: dark;
     }
   }
+  .theme-bar { display: flex; justify-content: flex-end; direction: ltr; }
+  .theme-btn {
+    font: inherit; font-size: .9rem; cursor: pointer; padding: .4rem .9rem;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink);
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn:focus-visible, .toggle button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  body { transition: background-color .2s ease, color .2s ease; }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
@@ -53,6 +81,9 @@
 </head>
 <body dir="ltr">
 <div class="wrap">
+  <div class="theme-bar">
+    <button id="theme-btn" class="theme-btn" type="button"></button>
+  </div>
   <header>
     <h1 id="title"></h1>
     <p class="sub" id="subtitle"></p>
@@ -200,6 +231,31 @@ function render() {
   document.getElementById("btn-en").setAttribute("aria-pressed", lang === "en");
   document.getElementById("btn-dv").setAttribute("aria-pressed", lang === "dv");
 }
+
+/* ---------- Light / dark theme ---------- */
+const root = document.documentElement;
+const themeBtn = document.getElementById("theme-btn");
+const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function currentTheme() {
+  const set = root.getAttribute("data-theme");
+  if (set === "light" || set === "dark") return set;
+  return darkQuery.matches ? "dark" : "light";
+}
+function updateThemeButton() {
+  const dark = currentTheme() === "dark";
+  themeBtn.textContent = dark ? "☀ Light mode" : "☾ Dark mode";
+  themeBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+}
+themeBtn.onclick = () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem("theme", next); } catch (e) {}
+  updateThemeButton();
+};
+// Keep the button label right if the device setting changes and no choice was saved.
+darkQuery.addEventListener("change", updateThemeButton);
+updateThemeButton();
 
 document.getElementById("btn-en").onclick = () => { lang = "en"; render(); };
 document.getElementById("btn-dv").onclick = () => { lang = "dv"; render(); };
