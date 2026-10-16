@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Panel</title>
+<script>
+  // Use the same light/dark choice as the public site, before first paint.
+  try {
+    var saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") {
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Noto+Sans+Thaana:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f7f4ee; --card:#fffdf8; --ink:#1f2a24; --muted:#5d6b63;
+    --accent:#2f6b57; --line:#e3ddd0; --danger:#a3281c;
+    --ok-bg:#e3f3ea; --ok-ink:#1b5a3a; --err-bg:#fde4e1; --err-ink:#7a1f16;
+    --info-bg:#e8eef5; --info-ink:#27425f;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg:#121a16; --card:#18231d; --ink:#e9efe9; --muted:#a3b2a9;
+    --accent:#6fc2a4; --line:#2a3a31; --danger:#f19c93;
+    --ok-bg:#183a29; --ok-ink:#a8e4c4; --err-bg:#4a1d19; --err-ink:#f6c3bd;
+    --info-bg:#1d2c3d; --info-ink:#b6cde6;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#121a16; --card:#18231d; --ink:#e9efe9; --muted:#a3b2a9;
+      --accent:#6fc2a4; --line:#2a3a31; --danger:#f19c93;
+      --ok-bg:#183a29; --ok-ink:#a8e4c4; --err-bg:#4a1d19; --err-ink:#f6c3bd;
+      --info-bg:#1d2c3d; --info-ink:#b6cde6;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Lora", "Noto Sans Thaana", Georgia, serif; line-height: 1.6;
+  }
+  [dir="rtl"] { font-family: "Noto Sans Thaana", "MV Boli", sans-serif; line-height: 2; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  h1 { margin: 0; font-size: 1.75rem; color: var(--accent); }
+  h2 { margin: 0 0 .75rem; font-size: 1.15rem; color: var(--accent); }
+  a { color: var(--accent); }
+  .muted { color: var(--muted); font-size: .92rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .between { justify-content: space-between; }
+  label { display: block; font-size: .92rem; font-weight: 600; margin: 0 0 .9rem; }
+  label.check { font-weight: 400; display: flex; gap: .5rem; align-items: center; }
+  input[type=text], input[type=password], textarea {
+    display: block; width: 100%; margin-top: .3rem; padding: .6rem .75rem; font: inherit; font-weight: 400;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  }
+  textarea { min-height: 11rem; resize: vertical; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 .75rem; }
+  button {
+    font: inherit; font-size: .92rem; padding: .5rem 1rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+  }
+  button.primary { background: var(--accent); color: var(--bg); }
+  button.danger { border-color: var(--danger); color: var(--danger); }
+  button.small { padding: .3rem .7rem; font-size: .85rem; }
+  button:disabled { opacity: .45; cursor: default; }
+  .busy { opacity: .6; pointer-events: none; }
+  .status { padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; }
+  .status.info { background: var(--info-bg); color: var(--info-ink); }
+  .status.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .status.error { background: var(--err-bg); color: var(--err-ink); }
+  details { margin-bottom: 1rem; }
+  summary { cursor: pointer; color: var(--accent); }
+  details ol { margin: .6rem 0 0; padding-left: 1.3rem; }
+  details li { margin-bottom: .3rem; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; padding: .75rem 0; border-top: 1px solid var(--line); }
+  ul.list li:first-child { border-top: 0; }
+  .item-title { font-weight: 600; }
+  .item-meta { color: var(--muted); font-size: .85rem; }
+  .counts { color: var(--muted); font-size: .85rem; margin: -.4rem 0 1rem; }
+  fieldset { border: 1px dashed var(--line); border-radius: 10px; padding: .9rem 1rem .2rem; margin: 0 0 1rem; }
+  legend { padding: 0 .4rem; font-weight: 600; font-size: .92rem; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <h1>Admin panel</h1>
+    <a href="index.html">← View the site</a>
+  </header>
+
+  <section class="card" id="connect-card">
+    <h2>Connect to GitHub</h2>
+    <p id="connected-line" class="muted" hidden></p>
+
+    <div id="connect-box">
+      <details>
+        <summary>How to get an access token (one time)</summary>
+        <ol>
+          <li>On GitHub, open <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>.</li>
+          <li>Click <strong>Generate new token</strong> and give it a name.</li>
+          <li>Under <strong>Repository access</strong>, choose <strong>Only select repositories</strong> and pick <strong>Islamic-stories</strong>.</li>
+          <li>Under <strong>Permissions → Repository permissions</strong>, set <strong>Contents</strong> to <strong>Read and write</strong>.</li>
+          <li>Generate the token, copy it, and paste it below.</li>
+        </ol>
+        <p class="muted">The token works like a password for this one repository. Do not share it. This page sends it only to GitHub.</p>
+      </details>
+
+      <form id="connect-form" autocomplete="off">
+        <div class="grid3">
+          <label>Repository owner <input type="text" id="owner" value="Malsaalim" autocomplete="off" spellcheck="false"></label>
+          <label>Repository name <input type="text" id="repo" value="Islamic-stories" autocomplete="off" spellcheck="false"></label>
+          <label>Branch <input type="text" id="branch" value="main" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <label>Access token <input type="password" id="token" autocomplete="off" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" id="remember"> Remember the token on this device (only on a computer or phone that only you use)</label>
+        <button type="submit" class="primary" id="connect-btn">Connect and load articles</button>
+      </form>
+    </div>
+    <div class="row" id="connected-actions" hidden>
+      <button type="button" id="disconnect-btn">Disconnect and forget token</button>
+    </div>
+  </section>
+
+  <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+
+  <section class="card" id="list-card" hidden>
+    <div class="row between" style="margin-bottom:.5rem">
+      <h2 style="margin:0">Articles</h2>
+      <div class="row">
+        <button type="button" class="small" id="reload-btn">Reload</button>
+        <button type="button" class="primary" id="new-btn">+ New article</button>
+      </div>
+    </div>
+    <ul class="list" id="article-list"></ul>
+    <p class="muted" id="empty" hidden>There are no articles yet. Press “New article” to add the first one.</p>
+  </section>
+
+  <section class="card" id="editor-card" hidden>
+    <h2 id="editor-heading">New article</h2>
+    <form id="editor-form" autocomplete="off">
+      <label>Title (English)
+        <input type="text" id="title-en" maxlength="200">
+      </label>
+      <label>Text (English)
+        <textarea id="body-en" placeholder="Write the article here. Leave a blank line between paragraphs."></textarea>
+      </label>
+
+      <fieldset>
+        <legend>Dhivehi (optional)</legend>
+        <p class="muted" style="margin-top:0">Leave this empty to show English only. Visitors can still press “Auto-translate”. If you add your own Dhivehi, it must have the same number of paragraphs as the English text.</p>
+        <label>Title (Dhivehi)
+          <input type="text" id="title-dv" dir="rtl" lang="dv" maxlength="300">
+        </label>
+        <label>Text (Dhivehi)
+          <textarea id="body-dv" dir="rtl" lang="dv"></textarea>
+        </label>
+      </fieldset>
+
+      <p class="counts" id="counts"></p>
+
+      <div class="row">
+        <button type="submit" class="primary" id="save-btn">Publish article</button>
+        <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+      <p class="muted">Publishing saves straight to GitHub. The live site updates after a minute or two.</p>
+    </form>
+  </section>
+</div>
+
+<script>
+/* CORE START — talks to GitHub; no page elements are used in this block */
+const FILE = "articles.json";
+const cfg = { owner: "", repo: "", branch: "main", token: "" };
+let data = null;      // the articles.json content as last loaded or saved
+let fileSha = null;   // GitHub's version id of that file, needed to save over it
+
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function toBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+function fromBase64(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ""));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+function splitParagraphs(text) {
+  return String(text || "").split(/\n\s*\n/).map(s => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+function slugify(s) {
+  return String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+}
+function newId(title) {
+  return (slugify(title) || "article") + "-" + Date.now().toString(36);
+}
+
+class ApiError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+function explain(status, msg) {
+  if (status === 401) return "GitHub rejected the token. It may be wrong or expired.";
+  if (status === 403) return "GitHub refused the request. The token may not have permission, or too many requests were made." + (msg ? " (" + msg + ")" : "");
+  if (status === 404) return "Not found. Check the owner, repository and branch, and make sure the token has access to this repository with Contents set to Read and write.";
+  if (status === 409) return "The articles file changed on GitHub after it was loaded. Press Reload and try again.";
+  return "GitHub returned an error (" + status + ")" + (msg ? ": " + msg : ".");
+}
+
+async function ghRequest(method, body) {
+  const base = "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) + "/" +
+    encodeURIComponent(cfg.repo) + "/contents/" + FILE;
+  const url = method === "GET" ? base + "?ref=" + encodeURIComponent(cfg.branch) : base;
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      cache: "no-store",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": "Bearer " + cfg.token,
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (e) {
+    throw new ApiError(0, "Could not reach GitHub. Check your internet connection.");
+  }
+  let json = null;
+  try { json = await res.json(); } catch (e) {}
+  if (!res.ok) throw new ApiError(res.status, explain(res.status, json && json.message));
+  return json;
+}
+
+async function loadArticles() {
+  const json = await ghRequest("GET");
+  if (!json || typeof json.content !== "string") {
+    throw new ApiError(0, "Could not read " + FILE + " from GitHub.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(fromBase64(json.content)); }
+  catch (e) { throw new ApiError(0, FILE + " is not valid JSON."); }
+  if (!parsed || !Array.isArray(parsed.articles)) {
+    throw new ApiError(0, FILE + " does not contain an \"articles\" list.");
+  }
+  data = parsed;
+  fileSha = json.sha;
+}
+
+// Save a changed copy of the data. The local copy is only replaced if GitHub accepts it.
+async function commit(next, message) {
+  const text = JSON.stringify(next, null, 2) + "\n";
+  const json = await ghRequest("PUT", {
+    message, content: toBase64(text), sha: fileSha, branch: cfg.branch
+  });
+  fileSha = json.content.sha;
+  data = next;
+}
+
+function buildArticle(f, existing) {
+  const titleEn = String(f.titleEn || "").trim();
+  const en = splitParagraphs(f.bodyEn);
+  const dv = splitParagraphs(f.bodyDv);
+  if (!titleEn) throw new Error("Please enter an English title.");
+  if (en.length === 0) throw new Error("Please enter the English text.");
+  if (dv.length && dv.length !== en.length) {
+    throw new Error("The Dhivehi text has " + dv.length + " paragraph(s) but the English has " + en.length +
+      ". They must match (separate paragraphs with a blank line), or leave the Dhivehi empty.");
+  }
+  return {
+    id: existing ? existing.id : newId(titleEn),
+    date: existing ? existing.date : new Date().toISOString().slice(0, 10),
+    title: { en: titleEn, dv: String(f.titleDv || "").trim() },
+    points: { en, dv }
+  };
+}
+/* CORE END */
+
+/* ---------- Page ---------- */
+const $ = id => document.getElementById(id);
+let busy = false;
+let editingId = null;   // id of the article being edited, or null for a new one
+
+function showStatus(message, kind) {
+  const box = $("status");
+  box.textContent = message;
+  box.className = "status " + (kind || "info");
+  box.hidden = !message;
+}
+function setBusy(on) {
+  busy = on;
+  $("app").setAttribute("aria-busy", on ? "true" : "false");
+  ["connect-card", "list-card", "editor-card"].forEach(id => $(id).classList.toggle("busy", on));
+}
+function errText(e) { return e && e.message ? e.message : "Something went wrong."; }
+
+function readStored(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
+function writeStored(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+function readToken() {
+  try { return sessionStorage.getItem("admin-token") || localStorage.getItem("admin-token") || ""; } catch (e) { return ""; }
+}
+function storeToken(token, remember) {
+  try {
+    sessionStorage.setItem("admin-token", token);
+    if (remember) localStorage.setItem("admin-token", token); else localStorage.removeItem("admin-token");
+  } catch (e) {}
+}
+function forgetToken() {
+  try { sessionStorage.removeItem("admin-token"); localStorage.removeItem("admin-token"); } catch (e) {}
+}
+
+function showConnected(on) {
+  $("connect-box").hidden = on;
+  $("connected-actions").hidden = !on;
+  $("connected-line").hidden = !on;
+  $("list-card").hidden = !on;
+  if (on) {
+    $("connected-line").textContent = "Connected to " + cfg.owner + "/" + cfg.repo + " (" + cfg.branch + ").";
+  } else {
+    $("editor-card").hidden = true;
+  }
+}
+
+function renderList() {
+  const ul = $("article-list");
+  ul.replaceChildren();
+  $("empty").hidden = data.articles.length !== 0;
+  data.articles.forEach((a, i) => {
+    const li = document.createElement("li");
+
+    const text = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = (i + 1) + ". " + a.title.en;
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    const hasDv = a.points && Array.isArray(a.points.dv) && a.points.dv.length > 0;
+    meta.textContent = [a.date || "", a.points.en.length + " paragraph" + (a.points.en.length === 1 ? "" : "s"),
+      hasDv ? "Dhivehi added" : "English only"].filter(Boolean).join(" · ");
+    text.append(title, meta);
+
+    const actions = document.createElement("div");
+    actions.className = "row";
+    const mk = (label, aria, cls, handler, disabled) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = label; b.className = "small " + (cls || "");
+      b.setAttribute("aria-label", aria + ": " + a.title.en);
+      b.disabled = !!disabled; b.onclick = handler;
+      return b;
+    };
+    actions.append(
+      mk("↑", "Move up", "", () => moveArticle(i, -1), i === 0),
+      mk("↓", "Move down", "", () => moveArticle(i, 1), i === data.articles.length - 1),
+      mk("Edit", "Edit", "", () => openEditor(a)),
+      mk("Delete", "Delete", "danger", () => deleteArticle(a))
+    );
+    li.append(text, actions);
+    ul.append(li);
+  });
+}
+
+function updateCounts() {
+  const en = splitParagraphs($("body-en").value).length;
+  const dv = splitParagraphs($("body-dv").value).length;
+  $("counts").textContent = "Paragraphs: English " + en + (dv ? ", Dhivehi " + dv : "") +
+    (dv && dv !== en ? " (these must match before you can publish)" : "");
+}
+
+function openEditor(article) {
+  editingId = article ? article.id : null;
+  $("editor-heading").textContent = article ? "Edit article" : "New article";
+  $("save-btn").textContent = article ? "Save changes" : "Publish article";
+  $("title-en").value = article ? article.title.en : "";
+  $("body-en").value = article ? article.points.en.join("\n\n") : "";
+  $("title-dv").value = article ? (article.title.dv || "") : "";
+  $("body-dv").value = article && Array.isArray(article.points.dv) ? article.points.dv.join("\n\n") : "";
+  updateCounts();
+  $("editor-card").hidden = false;
+  showStatus("", "info");
+  $("editor-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("title-en").focus();
+}
+function closeEditor() { editingId = null; $("editor-card").hidden = true; }
+
+async function connect(auto) {
+  if (busy) return;
+  cfg.owner = $("owner").value.trim();
+  cfg.repo = $("repo").value.trim();
+  cfg.branch = $("branch").value.trim() || "main";
+  cfg.token = $("token").value.trim();
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    showStatus("Please fill in the owner, repository name and access token.", "error");
+    return;
+  }
+  setBusy(true);
+  showStatus("Connecting to GitHub…", "info");
+  try {
+    await loadArticles();
+    writeStored("admin-owner", cfg.owner); writeStored("admin-repo", cfg.repo); writeStored("admin-branch", cfg.branch);
+    storeToken(cfg.token, $("remember").checked);
+    $("token").value = "";
+    showConnected(true);
+    renderList();
+    showStatus(data.articles.length + " article" + (data.articles.length === 1 ? "" : "s") + " loaded.", "ok");
+  } catch (e) {
+    showConnected(false);
+    cfg.token = "";
+    if (auto && e.status === 401) forgetToken();
+    showStatus(errText(e), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function runChange(next, message, successText) {
+  if (busy) return false;
+  setBusy(true);
+  showStatus("Saving to GitHub…", "info");
+  try {
+    await commit(next, message);
+    renderList();
+    showStatus(successText + " The live site updates in a minute or two.", "ok");
+    return true;
+  } catch (e) {
+    showStatus(errText(e), "error");
+    return false;
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function moveArticle(index, step) {
+  const next = clone(data);
+  const j = index + step;
+  if (j < 0 || j >= next.articles.length) return;
+  [next.articles[index], next.articles[j]] = [next.articles[j], next.articles[index]];
+  await runChange(next, "Reorder articles", "Order saved.");
+}
+
+async function deleteArticle(article) {
+  if (!confirm("Delete \"" + article.title.en + "\"?\n\nIt will disappear from the site. You can get it back from the repository history on GitHub.")) return;
+  const next = clone(data);
+  next.articles = next.articles.filter(a => a.id !== article.id);
+  const ok = await runChange(next, "Delete article: " + article.title.en, "Article deleted.");
+  if (ok && editingId === article.id) closeEditor();
+}
+
+async function saveArticle(ev) {
+  ev.preventDefault();
+  if (busy) return;
+  const existing = editingId ? data.articles.find(a => a.id === editingId) : null;
+  let article;
+  try {
+    article = buildArticle({
+      titleEn: $("title-en").value, bodyEn: $("body-en").value,
+      titleDv: $("title-dv").value, bodyDv: $("body-dv").value
+    }, existing);
+  } catch (e) {
+    showStatus(errText(e), "error");
+    return;
+  }
+  const next = clone(data);
+  if (existing) {
+    next.articles = next.articles.map(a => (a.id === existing.id ? article : a));
+  } else {
+    next.articles.push(article);
+  }
+  const ok = await runChange(
+    next,
+    (existing ? "Edit article: " : "Add article: ") + article.title.en,
+    existing ? "Changes saved." : "Article published."
+  );
+  if (ok) closeEditor();
+}
+
+function disconnect() {
+  forgetToken();
+  cfg.token = ""; data = null; fileSha = null;
+  closeEditor();
+  showConnected(false);
+  showStatus("Disconnected. The token was removed from this browser.", "info");
+}
+
+$("connect-form").addEventListener("submit", ev => { ev.preventDefault(); connect(false); });
+$("disconnect-btn").onclick = disconnect;
+$("reload-btn").onclick = async () => {
+  if (busy) return;
+  setBusy(true); showStatus("Reloading from GitHub…", "info");
+  try { await loadArticles(); renderList(); showStatus("Reloaded.", "ok"); }
+  catch (e) { showStatus(errText(e), "error"); }
+  finally { setBusy(false); }
+};
+$("new-btn").onclick = () => openEditor(null);
+$("cancel-btn").onclick = closeEditor;
+$("editor-form").addEventListener("submit", saveArticle);
+$("body-en").addEventListener("input", updateCounts);
+$("body-dv").addEventListener("input", updateCounts);
+
+// Start-up: fill in remembered settings and reconnect if a token was kept.
+$("owner").value = readStored("admin-owner") || $("owner").value;
+$("repo").value = readStored("admin-repo") || $("repo").value;
+$("branch").value = readStored("admin-branch") || $("branch").value;
+const savedToken = readToken();
+if (savedToken) {
+  $("token").value = savedToken;
+  $("remember").checked = !!readStored("admin-token");
+  connect(true);
+}
+</script>
+</body>
+</html>

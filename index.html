@@ -114,78 +114,29 @@
 
 <script>
 /* ============================================================
-   CONTENT. Paste reviewed Dhivehi text into the "dv" fields.
-   Leave a field as "" (or [] for lists) to show English instead.
+   The page text lives in articles.json (edit it through admin.html).
    ============================================================ */
-const CONTENT = {
+let CONTENT = {
   title: { en: "Stories of Repentance (Tawbah)", dv: "" },
-  subtitle: { en: "The transformative power of sincere repentance", dv: "" },
-
-  intro: {
-    en: "Several compelling stories in Islamic tradition illustrate the transformative power of repentance (Tawbah). One notable example is the story of the man who killed 99 people and sought forgiveness, demonstrating that no sin is too great for Allah's mercy if one truly repents. Another powerful example is the repentance of Ka'b ibn Malik, who was ostracized for failing to join the Battle of Tabuk but whose honesty and eventual acceptance of Allah's forgiveness highlight the importance of truthfulness and sincere remorse.",
-    dv: ""
-  },
-  deeper: { en: "Here's a deeper look at these and other stories:", dv: "" },
-
-  stories: [
-    {
-      title: { en: "1. The Man Who Killed 99 People", dv: "" },
-      points: {
-        en: [
-          "This story, found in Sahih Muslim, tells of a man who had killed 99 people and then sought guidance on repentance.",
-          "Initially, he was told by a monk that he could not be forgiven, leading him to kill the monk and complete his hundredth victim.",
-          "He then sought out a scholar who advised him to leave his wicked town and migrate to a righteous one for worship.",
-          "The man's journey to the new town was cut short by death, and the angels of mercy and punishment debated over him.",
-          "Ultimately, Allah accepted his repentance, as he had intended to leave his evil ways and seek forgiveness.",
-          "This story emphasizes that sincere repentance, even after great sins, is accepted by Allah, and that migration to a righteous environment can aid in reformation, according to QuranAcademy.io."
-        ],
-        dv: []
-      }
-    },
-    {
-      title: { en: "2. The Repentance of Ka'b ibn Malik", dv: "" },
-      points: {
-        en: [
-          "Ka'b ibn Malik was one of three companions who failed to join the Prophet Muhammad (PBUH) in the Battle of Tabuk.",
-          "Unlike the hypocrites who made excuses, Ka'b honestly admitted his fault to the Prophet.",
-          "For fifty days, he was ostracized by the community, enduring immense hardship and self-reflection.",
-          "Eventually, Allah revealed verses in the Quran accepting his repentance and the repentance of the other two companions.",
-          "This story highlights the importance of honesty, sincerity, and enduring patience in the face of adversity during the repentance process, according to Medium."
-        ],
-        dv: []
-      }
-    },
-    {
-      title: { en: "3. Al-Fudayl ibn 'Iyad's Transformation", dv: "" },
-      points: {
-        en: [
-          "Al-Fudayl ibn 'Iyad, before his piety, was a notorious highway robber.",
-          "One night, while attempting to rob a house, he heard someone reciting the verse, \"Has not the time yet come for the believers that their hearts should become humbly submissive for the remembrance of God\" (Surah Al-Hadid, 57:16).",
-          "This verse struck him deeply, leading him to abandon his life of crime and seek refuge.",
-          "He eventually became a renowned scholar and devoted his life to worship and guiding others, says propheticprofit.org.",
-          "This story illustrates the impact of divine guidance and the potential for profound change even from a life of sin."
-        ],
-        dv: []
-      }
-    },
-    {
-      title: { en: "4. The Wife of Pharaoh", dv: "" },
-      points: {
-        en: [
-          "Asiya, the wife of Pharaoh, is an example of a righteous woman who remained steadfast in her faith despite living with a tyrannical ruler.",
-          "She is mentioned in the Quran as an example of faith and repentance, praying for a home in Paradise near Allah and deliverance from Pharaoh's oppression.",
-          "Her story emphasizes that faith and righteous actions can be found even in the most challenging circumstances."
-        ],
-        dv: []
-      }
-    }
-  ],
-
-  closing: {
-    en: "These stories, and others in Islamic tradition, serve as reminders of Allah's infinite mercy and the potential for transformation through sincere repentance. They emphasize the importance of seeking forgiveness, being truthful in admitting one's faults, and striving to live a righteous life.",
-    dv: ""
-  }
+  subtitle: { en: "", dv: "" },
+  intro: { en: "", dv: "" },
+  deeper: { en: "", dv: "" },
+  articles: [],
+  closing: { en: "", dv: "" }
 };
+let loadError = "";
+async function loadContent() {
+  try {
+    const res = await fetch("articles.json", { cache: "no-cache" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (!data || !Array.isArray(data.articles)) throw new Error("bad data");
+    CONTENT = data;
+    loadError = "";
+  } catch (e) {
+    loadError = "Could not load the articles. If you opened this file straight from your computer, view it through GitHub Pages instead, because browsers block loading the data file locally.";
+  }
+}
 
 /* ============================================================ */
 const MT_KEY = "dv-machine-v1";
@@ -201,7 +152,7 @@ const hasText = s => typeof s === "string" && s.trim() !== "";
 
 // Decide which text to show. Reviewed Dhivehi always wins over machine output.
 function resolve(en, dv) {
-  if (lang !== "dv") return { text: en, kind: "en" };
+  if (lang !== "dv" || !hasText(en)) return { text: en, kind: "en" };
   if (hasText(dv)) return { text: dv, kind: "reviewed" };
   if (hasText(MT[en])) { usedMachine = true; return { text: MT[en], kind: "machine" }; }
   usedMissing = true;
@@ -232,24 +183,30 @@ function render() {
   setText(document.getElementById("title"), CONTENT.title.en, CONTENT.title.dv);
   setText(document.getElementById("subtitle"), CONTENT.subtitle.en, CONTENT.subtitle.dv);
 
-  const intro = document.createElement("section");
-  intro.className = "card";
-  intro.append(node("p", "lead", CONTENT.intro.en, CONTENT.intro.dv));
-  intro.append(node("p", "", CONTENT.deeper.en, CONTENT.deeper.dv));
-  main.append(intro);
+  if (CONTENT.intro.en || CONTENT.deeper.en) {
+    const intro = document.createElement("section");
+    intro.className = "card";
+    if (CONTENT.intro.en) intro.append(node("p", "lead", CONTENT.intro.en, CONTENT.intro.dv));
+    if (CONTENT.deeper.en) intro.append(node("p", "", CONTENT.deeper.en, CONTENT.deeper.dv));
+    main.append(intro);
+  }
 
-  CONTENT.stories.forEach(s => {
+  CONTENT.articles.forEach((s, n) => {
     const card = document.createElement("section");
     card.className = "card";
-    card.append(node("h2", "", s.title.en, s.title.dv));
+    const heading = node("h2", "", s.title.en, s.title.dv);
+    heading.textContent = (n + 1) + ". " + heading.textContent;
+    card.append(heading);
     s.points.en.forEach((t, i) => card.append(node("p", "", t, dvAt(s.points.dv, i, s.points.en))));
     main.append(card);
   });
 
-  const end = document.createElement("section");
-  end.className = "card";
-  end.append(node("p", "", CONTENT.closing.en, CONTENT.closing.dv));
-  main.append(end);
+  if (CONTENT.closing.en) {
+    const end = document.createElement("section");
+    end.className = "card";
+    end.append(node("p", "", CONTENT.closing.en, CONTENT.closing.dv));
+    main.append(end);
+  }
 
   renderNotice();
 
@@ -263,6 +220,7 @@ function render() {
 function renderNotice() {
   const box = document.getElementById("notice");
   const lines = [];
+  if (loadError) lines.push(loadError);
   if (errorMsg) lines.push(errorMsg);
   if (lang === "dv" && usedMachine) {
     lines.push("This Dhivehi was translated automatically by a machine (MyMemory). It has not been reviewed and may contain mistakes, especially in religious terms and Quran verses. Please have a Dhivehi-speaking scholar check it before relying on it.");
@@ -272,7 +230,7 @@ function renderNotice() {
   }
   box.replaceChildren(...lines.map(t => { const p = document.createElement("p"); p.textContent = t; return p; }));
   box.hidden = lines.length === 0;
-  box.classList.toggle("error", !!errorMsg);
+  box.classList.toggle("error", !!(errorMsg || loadError));
 }
 
 /* ---------- Automatic translation (MyMemory, free, no account) ---------- */
@@ -313,12 +271,12 @@ function pendingTexts() {
   add(CONTENT.subtitle.en, CONTENT.subtitle.dv);
   add(CONTENT.intro.en, CONTENT.intro.dv);
   add(CONTENT.deeper.en, CONTENT.deeper.dv);
-  CONTENT.stories.forEach(s => {
+  CONTENT.articles.forEach(s => {
     add(s.title.en, s.title.dv);
     s.points.en.forEach((t, i) => add(t, dvAt(s.points.dv, i, s.points.en)));
   });
   add(CONTENT.closing.en, CONTENT.closing.dv);
-  return need;
+  return need.filter(hasText);
 }
 
 async function autoTranslate() {
@@ -379,6 +337,7 @@ document.getElementById("btn-en").onclick = () => { lang = "en"; errorMsg = ""; 
 document.getElementById("btn-dv").onclick = () => { lang = "dv"; errorMsg = ""; render(); };
 document.getElementById("btn-auto").onclick = autoTranslate;
 render();
+loadContent().then(render);
 </script>
 </body>
 </html>
